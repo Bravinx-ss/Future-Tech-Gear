@@ -1,0 +1,301 @@
+import axios from "axios";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Carouselcomponent from "./Carouselcomponent";
+
+
+const Getproducts = () => {
+  // initialize hooks
+  const [loading, setLoading] = useState("");
+  const [error, setError] = useState("");
+  const [product, setProduct] = useState([]);
+  const [search, setSearch] = useState("");
+
+  // navigate hook
+  const navigate = useNavigate();
+
+  // img url
+  const img_url = "https://Bravinchui.pythonanywhere.com/static/images/";
+
+  // function to fetch data form api
+  const getproducts = async () => {
+    setLoading("Please Wait...");
+    try {
+      const response = await axios.get(
+        "https://Bravinchui.pythonanywhere.com/api/get_product_details"
+      );
+      setLoading("");
+      setError("");
+      setProduct(response.data);
+    } catch (error) {
+      setLoading("");
+      setError(error.message);
+    }
+  };
+
+  useEffect(() => {
+    getproducts();
+  }, []);
+
+  // Filtered products based on search
+  const filtered_products = product.filter((item) =>
+    item.product_name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="row container-fluid bg-dark">
+      <Carouselcomponent />
+      <span className="text-info">{loading}</span>
+      <span className="text-danger">{error}</span>
+      <h3 className="mt-3 text-center text-light">Discover The Latest FTG Gadgets</h3>
+
+      {/* Search Input */}
+      <div className="row justify-content-center mt-3 mb-3 bg-dark">
+        <input
+          className="form-control w-50"
+          type="search"
+          placeholder="Search Products..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      {/* Display Filtered Products */}
+      {/* {filtered_products.length > 0 ? ( */}
+        {filtered_products.map((product) => (
+          <div className="col-md-4  justify-content-center mb-4 bg-dark" key={product.id}>
+            <div className="card shadow text-center">
+              <img
+                src={img_url + product.product_photo}
+                alt={product.product_name}
+                className="product_img bg pt-2"
+              />
+              <div className="card-body bg">
+                <h5 className="mt-2 text-light">{product.product_name}</h5>
+                <p className="text-light">{product.product_description}</p>
+                <b className="text-warning">{product.product_cost}</b> <br />
+                <button
+                  onClick={() =>
+                    navigate("/makepayment", { state: { product, img_url } })
+                  }
+                  className="btn btn-success"
+                >
+                  Make Payment
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      {/* ) : (
+        <p className="text-center text-danger">No products found.</p>
+      )} */}
+      <section>
+        <img src="../static/images/carousel.jpeg" alt="" className="d-block w-100" />
+      </section>
+      <div className="col-md-4">
+        <img src="../static/images/FUNTORO.jpeg" alt="" />
+
+      </div>
+    </div>
+   
+  );
+};
+
+export default Getproducts;
+
+
+
+
+
+
+
+
+
+import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+
+const Cart = () => {
+  const [cart, setCart] = useState([]);
+  const navigate = useNavigate();
+
+  // Load cart on component mount, only once
+  useEffect(() => {
+    const savedCart = JSON.parse(localStorage.getItem("cart")) || [];
+    console.log("Loaded cart from localStorage:", savedCart);  // Log loaded cart
+    setCart(savedCart); // Set the cart state only once
+  }, []); // Only run on mount
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    if (cart.length > 0) {
+      console.log("Saving cart to localStorage:", cart); // Log cart before saving
+      localStorage.setItem("cart", JSON.stringify(cart));
+    }
+  }, [cart]); // Runs only when cart state changes
+
+  const increaseQuantity = (id) => {
+    setCart((prevCart) =>
+      prevCart.map((item) =>
+        item.product_id === id
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      )
+    );
+  };
+
+  const decreaseQuantity = (id) => {
+    setCart((prevCart) =>
+      prevCart.map((item) =>
+        item.product_id === id
+          ? {
+              ...item,
+              quantity: item.quantity > 1 ? item.quantity - 1 : 1,
+            }
+          : item
+      )
+    );
+  };
+
+  const removeItem = (id) => {
+    const updatedCart = cart.filter((item) => item.product_id !== id);
+    setCart(updatedCart);
+  };
+
+  return (
+    <div className="container mt-5">
+      <h3>Your Cart</h3>
+      {cart.length === 0 ? (
+        <p>Your cart is empty.</p>
+      ) : (
+        <>
+          <div className="row">
+            {cart.map((product) => (
+              <div className="col-md-4 mb-4" key={product.product_id}>
+                <div className="card">
+                  <img
+                    src={`https://Bravinchui.pythonanywhere.com/static/images/${product.product_photo}`}
+                    alt={product.product_name}
+                    className="card-img-top"
+                  />
+                  <div className="card-body">
+                    <h5>{product.product_name}</h5>
+                    <p>{product.product_description}</p>
+                    <b>Ksh {product.product_cost}</b>
+
+                    {/* Quantity Controls */}
+                    <div className="d-flex align-items-center my-2">
+                      <button
+                        className="btn btn-sm btn-outline-secondary me-2"
+                        onClick={() => decreaseQuantity(product.product_id)}
+                      >
+                        −
+                      </button>
+                      <span>{product.quantity}</span>
+                      <button
+                        className="btn btn-sm btn-outline-secondary ms-2"
+                        onClick={() => increaseQuantity(product.product_id)}
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {/* Remove Item Button */}
+                    <button
+                      className="btn btn-sm btn-danger mt-2"
+                      onClick={() => removeItem(product.product_id)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Payment Button */}
+          <div className="text-center mt-4">
+            <button
+              className="btn btn-success btn-lg"
+              onClick={() => navigate("/cartpayment")}
+            >
+              Proceed to Payment
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default Cart;
+
+
+
+
+
+// src/components/Navbar.jsx
+import React from 'react';
+import { FaHome, FaInfoCircle, FaShoppingCart, FaBars } from 'react-icons/fa';
+import './Navbar.css'; // Keep using the same CSS for styling
+// import { Link } from 'react-router-dom';
+
+
+const Navbar = () => {
+  return (
+    <nav className="navbar">
+      <div className="navbar-container">
+        <div className="navbar-logo">
+          <h1>FTG</h1>
+        </div>
+        <div className="navbar-menu">
+          <ul className="navbar-links">
+            <li className="navbar-item">
+              <a href="/" className="navbar-link">
+                <FaHome className="navbar-icon" />
+                Home
+              </a>
+            </li>
+            <li className="navbar-item">
+              <a href="/about" className="navbar-link">
+                <FaInfoCircle className="navbar-icon" />
+                About
+              </a>
+            </li>
+            <li className="navbar-item">
+              <a href="/cart" className="navbar-link">
+                <FaShoppingCart className="navbar-icon" />
+                Cart
+              </a>
+            </li>
+            <li className="navbar-item">
+              <a href="/menu" className="navbar-link">
+                <FaBars className="navbar-icon" />
+                Menu
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        {/* Sign In and Sign Up links */}
+        <div className="navbar-auth">
+          <ul className="navbar-links">
+            <li className="navbar-item">
+              <a href="/signin" className="navbar-link auth-link">
+                Sign In
+              </a>
+            </li>
+            <li className="navbar-item">
+              <a href="/signup" className="navbar-link auth-link">
+                Sign Up
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;
+
+
